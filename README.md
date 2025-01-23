@@ -27,7 +27,6 @@ This project is a Python script designed to scrape product information and price
     - [Mercado Libre Results](#mercado-libre-results)
     - [Consolidated Master File](#consolidated-master-file)
   - [Notes](#notes)
-    - [Passos para usar:](#passos-para-usar)
 
 ---
 
@@ -150,16 +149,4 @@ The results are saved in specific directories and consolidated into a master fil
 - Ensure the .env file contains a valid API key.
 - Proxy details are configured in the script and require network access permissions.
 - Review the fetch_with_retry function for response-specific handling if other error codes arise.
-
-### Passos para usar:
-
-1. Copie o conteúdo acima.
-2. Cole no seu arquivo `README.md`.
-3. Salve o arquivo e faça commit para o repositório:
-
-   ```bash
-   git add README.md
-   git commit -m "Add project README"
-   git push
-
 
