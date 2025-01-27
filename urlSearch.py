@@ -231,18 +231,17 @@ print(f"Arquivo Sodimac Salvo com sucesso em: {pathSodimac}")
 
 
 #############################################################################################################################################
+# Concatenar os DFs
 
-#Concatenar os DFs
-df_sodimac = df_resultsSodimac.reset_index(drop=True)
-df_mercado_libre = dfMeli.reset_index(drop=True)
-
-# Garantir que ambos os DataFrames tenham as mesmas colunas e remover duplicatas de colunas
+# Ensure both DataFrames have the same columns
 common_columns = ['query', 'dateSearch', 'price', 'thumbnail', 'permalink', 'seller', 'source', 'title']
-df_mercado_libre = df_mercado_libre.loc[:, ~df_mercado_libre.columns.duplicated()].reindex(columns=common_columns)
-df_sodimac = df_sodimac.loc[:, ~df_sodimac.columns.duplicated()].reindex(columns=common_columns)
 
-# Consolidando resultados em um único DataFrame
-df_master = pd.concat([df_mercado_libre, df_sodimac], ignore_index=True, sort=False)
+# Reindex both DataFrames to match the common columns
+df_resultsSodimac = df_resultsSodimac.reindex(columns=common_columns)
+dfMeli = dfMeli.reindex(columns=common_columns)
+
+# Now concatenate the DataFrames
+df_master = pd.concat([dfMeli, df_resultsSodimac], ignore_index=True, sort=False)
 
 # Carregar o arquivo master existente se houver, para consolidar
 master_file_path = 'S:/PT/ac-la/AC_MKB/7. TP ON/E-dealers/01_EspejoDePrecios/v2/Colombia/SearchingPrices_Sodimac_Meli_Colombia/Masterprice_Colombia.csv'
@@ -252,8 +251,9 @@ try:
 except FileNotFoundError:
     print("Arquivo MasterPrice.csv não encontrado, criando um novo.")
     df_master.to_csv(master_file_path, index=False)
+
 # Salvar backup do master antes de sobrescrever
-backup_dir = 'S:/PT/ac-la/AC_MKB/7. TP ON/E-dealers/01_EspejoDePrecios/v2/Peru/SearchingPrices_Sodimac_Meli_Peru/Backup/MasterResults'
+backup_dir = 'S:/PT/ac-la/AC_MKB/7. TP ON/E-dealers/01_EspejoDePrecios/v2/Peru/SearchingPrices_Sodimac_Meli_Colombia/Backup/MasterResults'
 if not os.path.exists(backup_dir):
     os.makedirs(backup_dir)
 backup_path = f'{backup_dir}/MasterPrice_Backup_{date.today()}.csv'
