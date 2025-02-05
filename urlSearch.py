@@ -143,7 +143,8 @@ def buscaSodimac(url, retries=5, backoff_factor=2.0):
         print(f"Preço extraído no valor de: {price}")
     except Exception as e:
         print(f"Preço não extraído devido ao erro: {e}")
-        price = None       
+        price = None
+          
         
     return link, image, title, price
 
@@ -202,8 +203,6 @@ resultsSodimac = []
 for index, row in tqdm(df.iterrows()):
     codSodimac = row['SKU Sodimac']
     url = f"https://www.homecenter.com.co/homecenter-co/search?Ntt={codSodimac}"
-    sku = row['SKU Bosch']
-    eanBosch = row['EAN']
     print(f'Processando SKU: {sku}')
     
     # Adicionando tempo variável antes de cada requisição
@@ -211,14 +210,25 @@ for index, row in tqdm(df.iterrows()):
     time.sleep(wait_time)
     
     link, image, title, price = buscaSodimac(url)
-    today = date.today()
+    
+    if price == None:
+        continue
+    else:
+        sku = row['SKU Bosch']
+        codSodimac = row['SKU Sodimac']
+        eanBosch = row['EAN']
+        source = 'Sodimac'
+        seller = 'Sodimac'
+        today = date.today()
+
     resultsSodimac.append({
             'query': sku,
             'dateSearch': today,
             'thumbnail': image,
             'permalink': link,
             'price': price,
-            'source': 'Sodimac',
+            'source': source,
+            'seller': seller,
             'title': title
         })
 
@@ -235,10 +245,22 @@ print(f"Arquivo Sodimac Salvo com sucesso em: {pathSodimac}")
 
 # Ensure both DataFrames have the same columns
 common_columns = ['query', 'dateSearch', 'price', 'thumbnail', 'permalink', 'seller', 'source', 'title']
+dfMeli = dfMeli.loc[:, ~dfMeli.columns.duplicated()]
+df_resultsSodimac = df_resultsSodimac.loc[:, ~df_resultsSodimac.columns.duplicated()]
 
-# Reindex both DataFrames to match the common columns
-df_resultsSodimac = df_resultsSodimac.reindex(columns=common_columns)
-dfMeli = dfMeli.reindex(columns=common_columns)
+# Garantir que as colunas essenciais existam antes de reindexar
+for col in common_columns:
+    if col not in dfMeli.columns:
+        dfMeli[col] = None
+    if col not in df_resultsSodimac.columns:
+        df_resultsSodimac[col] = None
+
+# **VALIDAÇÃO: Remover linhas onde 'price' está NaN**
+df_resultsSodimac = df_resultsSodimac.dropna(subset=['price'])
+
+# Reindexar os DataFrames para garantir a mesma estrutura de colunas
+dfMeli = dfMeli[common_columns]
+df_resultsSodimac = df_resultsSodimac[common_columns]
 
 # Now concatenate the DataFrames
 df_master = pd.concat([dfMeli, df_resultsSodimac], ignore_index=True, sort=False)
@@ -247,19 +269,20 @@ df_master = pd.concat([dfMeli, df_resultsSodimac], ignore_index=True, sort=False
 master_file_path = 'S:/PT/ac-la/AC_MKB/7. TP ON/E-dealers/01_EspejoDePrecios/v2/Colombia/SearchingPrices_Sodimac_Meli_Colombia/Masterprice_Colombia.csv'
 try:
     df_master_existing = pd.read_csv(master_file_path).reset_index(drop=True)
+    # Salvar backup do master antes de sobrescrever
+    backup_dir = 'S:/PT/ac-la/AC_MKB/7. TP ON/E-dealers/01_EspejoDePrecios/v2/Peru/SearchingPrices_Sodimac_Meli_Colombia/Backup/MasterResults'
+    if not os.path.exists(backup_dir):
+        os.makedirs(backup_dir)
+    backup_path = f'{backup_dir}/MasterPrice_Backup_{date.today()}.csv'
+    df_master.to_csv(backup_path, index=False)
+    print(f"Backup do arquivo master salvo em {backup_path}")
+    
     df_master = pd.concat([df_master_existing, df_master], ignore_index=True, sort=False)
 except FileNotFoundError:
     print("Arquivo MasterPrice.csv não encontrado, criando um novo.")
     df_master.to_csv(master_file_path, index=False)
 
-# Salvar backup do master antes de sobrescrever
-backup_dir = 'S:/PT/ac-la/AC_MKB/7. TP ON/E-dealers/01_EspejoDePrecios/v2/Peru/SearchingPrices_Sodimac_Meli_Colombia/Backup/MasterResults'
-if not os.path.exists(backup_dir):
-    os.makedirs(backup_dir)
-backup_path = f'{backup_dir}/MasterPrice_Backup_{date.today()}.csv'
-df_master.to_csv(backup_path, index=False)
-print(f"Backup do arquivo master salvo em {backup_path}")
 
 # Salvar o arquivo master atualizado
 df_master.to_csv(master_file_path, index=False)
-print(f"Consolidação completa e salva em MasterPrice.csv")
+print(f"Consolidação completa e salva em MasterPrice.csv") 
