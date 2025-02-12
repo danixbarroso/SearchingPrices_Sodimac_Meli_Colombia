@@ -222,7 +222,7 @@ for index, row in tqdm(df.iterrows()):
         today = date.today()
 
     resultsSodimac.append({
-            'query': sku,
+            'query': eanBosch,
             'dateSearch': today,
             'thumbnail': image,
             'permalink': link,
@@ -234,6 +234,9 @@ for index, row in tqdm(df.iterrows()):
 
 #resultados Sodimac
 df_resultsSodimac = pd.DataFrame(resultsSodimac)
+
+# Tirando linhas com preço zerado.
+df_resultsSodimac = df_resultsSodimac.dropna(subset=['price'])
 pathSodimac = f"S:/PT/ac-la/AC_MKB/7. TP ON/E-dealers/01_EspejoDePrecios/v2/Colombia/SearchingPrices_Sodimac_Meli_Colombia/Backup/Sodimac"
 df_resultsSodimac.to_csv(f"{pathSodimac}/ResultadosSodimac_{date.today()}.csv", index=False)
 
@@ -244,33 +247,21 @@ print(f"Arquivo Sodimac Salvo com sucesso em: {pathSodimac}")
 # Concatenar os DFs
 
 # Ensure both DataFrames have the same columns
+df_sodimac = df_resultsSodimac.reset_index(drop=True)
+df_mercado_libre = dfMeli.reset_index(drop=True)
 common_columns = ['query', 'dateSearch', 'price', 'thumbnail', 'permalink', 'seller', 'source', 'title']
-dfMeli = dfMeli.loc[:, ~dfMeli.columns.duplicated()]
-df_resultsSodimac = df_resultsSodimac.loc[:, ~df_resultsSodimac.columns.duplicated()]
-
-# Garantir que as colunas essenciais existam antes de reindexar
-for col in common_columns:
-    if col not in dfMeli.columns:
-        dfMeli[col] = None
-    if col not in df_resultsSodimac.columns:
-        df_resultsSodimac[col] = None
-
-# **VALIDAÇÃO: Remover linhas onde 'price' está NaN**
-df_resultsSodimac = df_resultsSodimac.dropna(subset=['price'])
-
-# Reindexar os DataFrames para garantir a mesma estrutura de colunas
-dfMeli = dfMeli[common_columns]
-df_resultsSodimac = df_resultsSodimac[common_columns]
+df_mercado_libre = df_mercado_libre.loc[:, ~df_mercado_libre.columns.duplicated()].reindex(columns=common_columns)
+df_sodimac = df_sodimac.loc[:, ~df_sodimac.columns.duplicated()].reindex(columns=common_columns)
 
 # Now concatenate the DataFrames
-df_master = pd.concat([dfMeli, df_resultsSodimac], ignore_index=True, sort=False)
+df_master = pd.concat([df_mercado_libre, df_sodimac], ignore_index=True, sort=False)
 
 # Carregar o arquivo master existente se houver, para consolidar
 master_file_path = 'S:/PT/ac-la/AC_MKB/7. TP ON/E-dealers/01_EspejoDePrecios/v2/Colombia/SearchingPrices_Sodimac_Meli_Colombia/Masterprice_Colombia.csv'
 try:
     df_master_existing = pd.read_csv(master_file_path).reset_index(drop=True)
     # Salvar backup do master antes de sobrescrever
-    backup_dir = 'S:/PT/ac-la/AC_MKB/7. TP ON/E-dealers/01_EspejoDePrecios/v2/Peru/SearchingPrices_Sodimac_Meli_Colombia/Backup/MasterResults'
+    backup_dir = 'S:/PT/ac-la/AC_MKB/7. TP ON/E-dealers/01_EspejoDePrecios/v2/Colombia/SearchingPrices_Sodimac_Meli_Colombia/Backup/MasterResults'
     if not os.path.exists(backup_dir):
         os.makedirs(backup_dir)
     backup_path = f'{backup_dir}/MasterPrice_Backup_{date.today()}.csv'
@@ -285,4 +276,4 @@ except FileNotFoundError:
 
 # Salvar o arquivo master atualizado
 df_master.to_csv(master_file_path, index=False)
-print(f"Consolidação completa e salva em MasterPrice.csv") 
+print(f"Consolidação completa e salva em MasterPrice.csv")
