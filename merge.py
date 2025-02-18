@@ -5,14 +5,14 @@ import matplotlib.pyplot as plt
 master_price_df = pd.read_csv('S:/PT/ac-la/AC_MKB/7. TP ON/E-dealers/01_EspejoDePrecios/v2/Colombia/SearchingPrices_Sodimac_Meli_Colombia/Masterprice_Colombia.csv')
 
 # Load the MasterColombia file
-master_colombia_df = pd.read_excel('S:/PT/ac-la/AC_MKB/7. TP ON/E-dealers/01_EspejoDePrecios/v2/Colombia/SearchingPrices_Sodimac_Meli_Colombia/Backup/MasterData.xlsx')
+master_colombia_df = pd.read_excel('S:/PT/ac-la/AC_MKB/7. TP ON/E-dealers/01_EspejoDePrecios/v2/Colombia/SearchingPrices_Sodimac_Meli_Colombia/SearchTerms/MasterData_Consolidado.xlsx')
 print(master_colombia_df.head)
 
 
 # Rename columns for easier access and consistency
 master_colombia_df.rename(columns={
-    "Código del objeto (SKU)": "SKU",
-    "Número de EAN o código de barras (13 dígitos)": "EAN"
+    "PMCódigo del objeto (SKU)": "SKU",
+    "PMNúmero de EAN o código de barras (13 dígitos)": "EAN"
 }, inplace=True)
 
 # Convert 'EAN' and 'SKU' columns in master_colombia_df and 'query' column in master_price_df to strings for consistent merging
@@ -20,11 +20,10 @@ master_colombia_df['EAN'] = master_colombia_df['EAN'].astype(str)
 master_colombia_df['SKU'] = master_colombia_df['SKU'].astype(str)
 master_price_df['query'] = master_price_df['query'].astype(str)
 
-# Cleaning up the 'EAN' column in master_colombia_df to remove decimals and make it comparable
+# Cleaning up the 'EAN' column in both dfs to remove decimals and make it comparable
 master_colombia_df['EAN'] = master_colombia_df['EAN'].str.split('.').str[0]
+master_price_df['query'] = master_price_df['query'].str.split('.').str[0]
 
-# Removing the '-000' suffix from the 'SKU' column in master_colombia_df to match with 'query' in sodimac_data
-master_colombia_df['SKU'] = master_colombia_df['SKU'].str.replace('-000$', '', regex=True)
 
 # Strip whitespace and remove leading zeros for consistent comparison
 master_colombia_df['SKU'] = master_colombia_df['SKU'].str.strip().str.lstrip('0')
@@ -42,7 +41,7 @@ print(f"Total de linhas em sodimac_data: {len(sodimac_data)}")
 print("Exemplos de valores em sodimac_data['query']:")
 print(sodimac_data['query'].unique()[:10])
 print("Exemplos de valores em master_colombia_df['SKU']:")
-print(master_colombia_df['SKU'].unique()[:10])
+print(master_colombia_df['EAN'].unique()[:10])
 
 # Merge based on the conditional relationships
 
@@ -51,7 +50,7 @@ merged_meli = pd.merge(meli_data, master_colombia_df, left_on="query", right_on=
 print(f"Total de linhas em merged_meli: {len(merged_meli)}")
 
 # 2. Merge Sodimac data on 'SKU'
-merged_sodimac = pd.merge(sodimac_data, master_colombia_df, left_on="query", right_on="SKU", how="inner")
+merged_sodimac = pd.merge(sodimac_data, master_colombia_df, left_on="query", right_on="EAN", how="inner")
 print(f"Total de linhas em merged_sodimac: {len(merged_sodimac)}")
 
 # Concatenate the two merged DataFrames to create the final unified table
